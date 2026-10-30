@@ -257,9 +257,182 @@ footer a{color:var(--teal-d)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s}
 .reveal.in{opacity:1;transform:none}
+
+/* ---------- password gate ---------- */
+html.pw-locked,html.pw-locked body{overflow:hidden!important;height:100%}
+.pw-gate{
+  position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:22px;
+  background:radial-gradient(900px 500px at 50% -12%,#d6f6f1 0%,#fffdf6 46%,#fff6e4 100%);
+}
+.pw-gate[hidden]{display:none!important}
+.pw-card{
+  width:100%;max-width:382px;background:#fff;border:2px solid var(--line);
+  border-radius:26px;padding:26px 22px 20px;text-align:center;
+  box-shadow:0 18px 40px rgba(31,45,58,.14);
+}
+.pw-flask{display:block;width:56px;height:56px;margin:0 auto 8px}
+.pw-title{font-size:22px;font-weight:900;letter-spacing:.5px}
+.pw-sub{margin:6px 0 18px;font-size:14px;color:var(--ink2);line-height:1.6}
+.pw-field{position:relative;display:flex;align-items:center}
+.pw-input{
+  width:100%;font-family:inherit;font-size:18px;letter-spacing:3px;font-weight:700;
+  color:var(--ink);background:#f7f6f0;border:2px solid var(--line);border-radius:16px;
+  padding:13px 48px 13px 16px;outline:none;transition:.18s;
+}
+.pw-input::placeholder{letter-spacing:0;font-weight:400;color:#aab4bb;font-size:15px}
+.pw-input:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 4px rgba(18,179,163,.14)}
+.pw-eye{
+  position:absolute;right:8px;width:34px;height:34px;border:0;border-radius:50%;
+  display:grid;place-items:center;background:transparent;color:#6b7a85;cursor:pointer;opacity:.6;
+}
+.pw-eye:hover{opacity:1;background:#f1efe6}
+.pw-err{min-height:20px;margin:8px 0 0;font-size:13px;font-weight:700;color:var(--coral)}
+.pw-btn{
+  width:100%;margin-top:6px;font-family:inherit;font-size:17px;font-weight:900;letter-spacing:1px;
+  color:#fff;background:linear-gradient(180deg,var(--teal),var(--teal-d));border:0;border-radius:999px;
+  padding:14px;cursor:pointer;box-shadow:0 8px 18px rgba(18,179,163,.34);transition:.18s;
+}
+.pw-btn:hover{filter:brightness(1.05)}
+.pw-btn:active{transform:translateY(1px)}
+.pw-btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.pw-note{margin:14px 0 0;font-size:11px;color:#a9b4bb;line-height:1.6}
+@keyframes pwShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}
+  40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.pw-shake{animation:pwShake .42s ease}
 </style>
 </head>
 <body>
+
+<!-- ---------- 密碼鎖 ---------- -->
+<div class="pw-gate" id="pwGate">
+  <div class="pw-card" id="pwCard">
+    <svg class="pw-flask" viewBox="0 0 64 64" aria-hidden="true">
+      <defs><clipPath id="pwFlaskClip"><path d="M28 8v14L15.5 46c-2.2 3.9.6 8.5 5 8.5h23c4.4 0 7.2-4.6 5-8.5L36 22V8z"/></clipPath></defs>
+      <rect x="0" y="37" width="64" height="30" fill="#12b3a3" clip-path="url(#pwFlaskClip)"/>
+      <path d="M28 8v14L15.5 46c-2.2 3.9.6 8.5 5 8.5h23c4.4 0 7.2-4.6 5-8.5L36 22V8z" fill="none" stroke="#0b8b7e" stroke-width="3.2" stroke-linejoin="round"/>
+      <path d="M23.5 7.2h17" stroke="#0b8b7e" stroke-width="4.2" stroke-linecap="round"/>
+      <circle cx="26.5" cy="45" r="2.4" fill="#fff" opacity=".9"/>
+      <circle cx="35" cy="49.5" r="1.7" fill="#fff" opacity=".9"/>
+      <circle cx="33" cy="42" r="1.3" fill="#fff" opacity=".75"/>
+    </svg>
+    <h1 class="pw-title">化學物質大冒險</h1>
+    <p class="pw-sub">請輸入密碼，開始你的科學探險</p>
+    <form class="pw-form" id="pwForm" novalidate>
+      <div class="pw-field">
+        <input class="pw-input" id="pwInput" type="password" inputmode="numeric"
+               autocomplete="current-password" placeholder="請輸入密碼" aria-label="密碼"
+               maxlength="32" required>
+        <button class="pw-eye" id="pwEye" type="button" aria-label="顯示密碼" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+            <path d="M2.6 12S6.1 5.6 12 5.6 21.4 12 21.4 12 17.9 18.4 12 18.4 2.6 12 2.6 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path id="pwEyeSlash" d="M4.2 19.8 19.8 4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" style="display:none"/>
+          </svg>
+        </button>
+      </div>
+      <p class="pw-err" id="pwErr" role="alert" aria-live="polite"></p>
+      <button class="pw-btn" id="pwBtn" type="submit">進入網頁</button>
+    </form>
+    <p class="pw-note">密碼由老師提供 · 此裝置 7 天內免再輸入</p>
+    <noscript><p class="pw-err">此網頁需要開啟 JavaScript 才能輸入密碼。</p></noscript>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY  = 'chemGate_v1';
+  var HASH = 'ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f'; /* 已加密，非明文 */
+  var TTL  = 7*24*60*60*1000;
+  var root = document.documentElement;
+  var gate = document.getElementById('pwGate');
+  var card = document.getElementById('pwCard');
+  var form = document.getElementById('pwForm');
+  var input= document.getElementById('pwInput');
+  var errEl= document.getElementById('pwErr');
+  var btn  = document.getElementById('pwBtn');
+  var eye  = document.getElementById('pwEye');
+
+  root.classList.add('pw-locked');
+
+  function open(){
+    root.classList.remove('pw-locked');
+    gate.hidden = true;
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('scroll'));
+  }
+  function valid(){
+    try{
+      var o = JSON.parse(localStorage.getItem(KEY) || 'null');
+      return !!(o && o.h === HASH && o.t && (Date.now() - o.t) < TTL);
+    }catch(e){ return false; }
+  }
+
+  function sha256(str){
+    var data = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', data).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){
+        return ('00' + b.toString(16)).slice(-2);
+      }).join('');
+    });
+  }
+
+  function shake(msg){
+    errEl.textContent = msg;
+    card.classList.remove('pw-shake');
+    void card.offsetWidth;
+    card.classList.add('pw-shake');
+    input.select();
+  }
+
+  if(valid()){ open(); return; }
+
+  setTimeout(function(){ if(!gate.hidden){ try{ input.focus(); }catch(e){} } }, 120);
+
+  var eyeSlash = document.getElementById('pwEyeSlash');
+  eye.addEventListener('click', function(){
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    eyeSlash.style.display = show ? 'block' : 'none';
+    eye.setAttribute('aria-pressed', show ? 'true' : 'false');
+    eye.setAttribute('aria-label', show ? '隱藏密碼' : '顯示密碼');
+    input.focus();
+  });
+
+  var fails = 0;
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var val = input.value.trim();
+    if(!val){ shake('請先輸入密碼'); return; }
+    errEl.textContent = '';
+    btn.disabled = true;
+    sha256(val).then(function(h){
+      if(h === HASH){
+        try{ localStorage.setItem(KEY, JSON.stringify({h:HASH, t:Date.now()})); }catch(e){}
+        open();
+      }else{
+        fails++;
+        btn.disabled = false;
+        if(fails >= 5){
+          var left = 10;
+          input.value = '';
+          btn.disabled = true;
+          errEl.textContent = '嘗試次數過多，請等 ' + left + ' 秒';
+          var t = setInterval(function(){
+            left--;
+            if(left <= 0){ clearInterval(t); btn.disabled = false; errEl.textContent = ''; fails = 0; input.focus(); }
+            else { errEl.textContent = '嘗試次數過多，請等 ' + left + ' 秒'; }
+          }, 1000);
+        }else{
+          input.value = '';
+          shake('密碼不正確，請再試一次');
+        }
+      }
+    }).catch(function(){
+      btn.disabled = false;
+      errEl.textContent = '此瀏覽器不支援密碼驗證，請改用 Chrome / Safari。';
+    });
+  });
+})();
+</script>
 
 <div class="topbar">
   <div class="inner">
